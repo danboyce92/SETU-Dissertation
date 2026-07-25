@@ -4,7 +4,12 @@ param(
     [string]$SnapshotName,
 
     [Parameter(Mandatory = $true, Position = 1)]
-    [string]$OutputFileName
+    [string]$OutputFileName,
+
+    #Load pressure level
+    [Parameter(Position = 2)]
+    [ValidateSet(0, 1, 2)]
+    [int]$Pressure = 0
 )
 
 #CONFIG
@@ -16,6 +21,27 @@ $GuestPassword  = "Password123!"
 
 $GuestWinpmem   = "\\vmware-host\Shared Folders\SharedFolder\winpmem\go-winpmem_amd64_1.0-rc2_signed.exe"
 $GuestOutput    = "\\vmware-host\Shared Folders\SharedFolder\Acquisitions\Tests\$OutputFileName"
+
+#Kill any previous load that needs cleaning up from a previous run
+Write-Host "Clearing any leftover memory load from a previous run..."
+$killCommand = 'Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like "*memory_load.ps1*" } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }'
+& $VmrunPath -T ws -gu $GuestUser -gp $GuestPassword runProgramInGuest $VmxPath `
+    "C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -Command $killCommand
+
+$pressurePercent = @{ 0 = 0; 1 = 25; 2 = 50 }[$Pressure]
+
+if ($pressurePercent -gt 0) {
+    Write-Host "Starting memory load: $pressurePercent% of currently free RAM inside guest..."
+    $loadScript = "\\vmware-host\Shared Folders\SharedFolder\scripts\memory_load.ps1"
+    $loadLog = "\\vmware-host\Shared Folders\SharedFolder\Acquisitions\Tests\$OutputFileName.loadlog.txt"
+
+    & $VmrunPath -T ws -gu $GuestUser -gp $GuestPassword runProgramInGuest $VmxPath -noWait `
+        "C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden `
+        -File $loadScript -PressurePercent $pressurePercent -LogPath $loadLog -HoldSeconds 900
+
+    Write-Host "Waiting for memory load to settle..."
+    Start-Sleep -Seconds 15
+}
 
 # Take the snapshot 
 Write-Host "Taking snapshot '$SnapshotName'..."
