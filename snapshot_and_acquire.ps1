@@ -35,6 +35,7 @@ if ($pressurePercent -gt 0) {
     $loadScript = "\\vmware-host\Shared Folders\SharedFolder\scripts\memory_load.ps1"
     $loadLog = "\\vmware-host\Shared Folders\SharedFolder\Acquisitions\Tests\$OutputFileName.loadlog.txt"
 
+    # Run the memory load script as the Guest on the VM
     & $VmrunPath -T ws -gu $GuestUser -gp $GuestPassword runProgramInGuest $VmxPath -noWait `
         "C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden `
         -File $loadScript -PressurePercent $pressurePercent -LogPath $loadLog -HoldSeconds 900

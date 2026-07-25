@@ -1,7 +1,11 @@
 import argparse
 import csv
+import os
 
 PAGE_SIZE = 4096
+
+# Fixed folder where every comparison's CSV output gets written
+OUTPUT_DIR = r"E:\Research\SharedFolder\Acquisitions"
 
 #Gap in raw file that needs to be ignored
 HOLE_START = 0xC0000000  # 3GB
@@ -18,7 +22,6 @@ def translate_offset(raw_offset: int) -> int | None:
 
 #Verify both files are the sizes they are meant to be before attempting a comparison
 def check_file_sizes(raw_path: str, vmem_path: str) -> None:
-    import os
     raw_size = os.path.getsize(raw_path)
     vmem_size = os.path.getsize(vmem_path)
 
@@ -96,12 +99,15 @@ def main():
     )
     parser.add_argument("raw", help="Path to WinPmem .raw acquisition")
     parser.add_argument("vmem", help="Path to VMware .vmem snapshot")
-    parser.add_argument("--out", default="smeared_pages.csv",
-                         help="CSV output path for smeared page offsets")
+    parser.add_argument("csv_name", nargs="?", default="smeared_pages.csv",
+                         help="Filename for the CSV output (saved into "
+                              f"{OUTPUT_DIR}). Defaults to smeared_pages.csv")
     args = parser.parse_args()
 
+    out_csv = os.path.join(OUTPUT_DIR, args.csv_name)
+
     check_file_sizes(args.raw, args.vmem)
-    compare_pages(args.raw, args.vmem, args.out)
+    compare_pages(args.raw, args.vmem, out_csv)
 
 
 if __name__ == "__main__":
