@@ -36,7 +36,7 @@ def check_file_sizes(raw_path: str, vmem_path: str) -> None:
         raise SystemExit(1)
 
 
-def compare_pages(raw_path: str, vmem_path: str, out_csv: str) -> None:
+def compare_pages(raw_path: str, vmem_path: str, out_csv: str) -> dict:
 
     matches = 0
     smeared = 0
@@ -92,6 +92,14 @@ def compare_pages(raw_path: str, vmem_path: str, out_csv: str) -> None:
     print(f"\nSmeared page offsets written to {out_csv} "
           f"({len(smeared_pages)} rows) for VAD triangulation.")
 
+    return {
+        "Total pages": total,
+        "Matched Count": matches,
+        "Smeared Count": smeared,
+        "Total excluded": excluded,
+        "Smeared Percentage": round(smeared / total * 100, 2) if total else None,
+    }
+
 
 def main():
     parser = argparse.ArgumentParser(
@@ -102,12 +110,25 @@ def main():
     parser.add_argument("csv_name", nargs="?", default="smeared_pages.csv",
                          help="Filename for the CSV output (saved into "
                               f"{OUTPUT_DIR}). Defaults to smeared_pages.csv")
+    parser.add_argument("--xlsx", help="Path to the tracking workbook, if you "
+                         "want results written straight into it")
+    parser.add_argument("--config", help="Sheet name (config) to write into, "
+                         "e.g. Win10_8Gb_2. Required if --xlsx is given.")
+    parser.add_argument("--run", type=int, help="Run number to write into, "
+                         "e.g. 7. Required if --xlsx is given.")
     args = parser.parse_args()
 
     out_csv = os.path.join(OUTPUT_DIR, args.csv_name)
 
     check_file_sizes(args.raw, args.vmem)
-    compare_pages(args.raw, args.vmem, out_csv)
+    stats = compare_pages(args.raw, args.vmem, out_csv)
+
+    if args.xlsx:
+        if not args.config or args.run is None:
+            print("\nERROR: --config and --run are both required when --xlsx is given.")
+            return
+        from xlsx_writer import write_run_data
+        write_run_data(args.xlsx, args.config, args.run, stats)
 
 
 if __name__ == "__main__":
