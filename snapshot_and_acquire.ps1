@@ -6,10 +6,17 @@ param(
     [Parameter(Mandatory = $true, Position = 1)]
     [string]$OutputFileName,
 
-    #Load pressure level
+    #System Load
     [Parameter(Position = 2)]
     [ValidateSet(0, 1, 2)]
-    [int]$Pressure = 0
+    [int]$Pressure = 0,
+
+    # Sheet name and run number 
+    [Parameter(Mandatory = $true)]
+    [string]$Config,
+
+    [Parameter(Mandatory = $true)]
+    [int]$RunNumber
 )
 
 #CONFIG
@@ -22,7 +29,10 @@ $GuestPassword  = "Password123!"
 $GuestWinpmem   = "\\vmware-host\Shared Folders\SharedFolder\winpmem\go-winpmem_amd64_1.0-rc2_signed.exe"
 $GuestOutput    = "\\vmware-host\Shared Folders\SharedFolder\Acquisitions\Tests\$OutputFileName"
 
-#Kill any previous load that needs cleaning up from a previous run
+$XlsxPath       = "E:\Research\SharedFolder\Acquisitions\Data.xlsx"
+$RecordTimingScript = "E:\Research\Pipeline\record_run_timing.py"
+
+# Remove any load from previous run
 Write-Host "Clearing any leftover memory load from a previous run..."
 $killCommand = 'Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like "*memory_load.ps1*" } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }'
 & $VmrunPath -T ws -gu $GuestUser -gp $GuestPassword runProgramInGuest $VmxPath `
@@ -35,7 +45,6 @@ if ($pressurePercent -gt 0) {
     $loadScript = "\\vmware-host\Shared Folders\SharedFolder\scripts\memory_load.ps1"
     $loadLog = "\\vmware-host\Shared Folders\SharedFolder\Acquisitions\Tests\$OutputFileName.loadlog.txt"
 
-    # Run the memory load script as the Guest on the VM
     & $VmrunPath -T ws -gu $GuestUser -gp $GuestPassword runProgramInGuest $VmxPath -noWait `
         "C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden `
         -File $loadScript -PressurePercent $pressurePercent -LogPath $loadLog -HoldSeconds 900
@@ -43,6 +52,16 @@ if ($pressurePercent -gt 0) {
     Write-Host "Waiting for memory load to settle..."
     Start-Sleep -Seconds 15
 }
+
+# Measure memory usage
+Write-Host "Measuring current memory usage..."
+$memUsageScript = "\\vmware-host\Shared Folders\SharedFolder\scripts\memory_usage.ps1"
+$memUsageLog = "\\vmware-host\Shared Folders\SharedFolder\Acquisitions\Tests\$OutputFileName.memusage.txt"
+& $VmrunPath -T ws -gu $GuestUser -gp $GuestPassword runProgramInGuest $VmxPath `
+    "C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -ExecutionPolicy Bypass `
+    -File $memUsageScript -LogPath $memUsageLog
+$memoryUsage = (Get-Content "E:\Research\SharedFolder\Acquisitions\Tests\$OutputFileName.memusage.txt").Trim()
+Write-Host "Memory usage: $memoryUsage%"
 
 # Take the snapshot 
 Write-Host "Taking snapshot '$SnapshotName'..."
@@ -78,3 +97,10 @@ Write-Host "`n--- Timing summary ---"
 Write-Host "Snapshot duration:       $($snapshotDuration.TotalSeconds) s"
 Write-Host "Gap (snapshot->acquire): $($gap.TotalSeconds) s"
 Write-Host "Acquisition duration:    $($acquisitionDuration.TotalSeconds) s"
+
+# Log into workbook
+python $RecordTimingScript --xlsx $XlsxPath --config $Config --run $RunNumber `
+    --snapshot-duration $snapshotDuration.TotalSeconds `
+    --acquisition-duration $acquisitionDuration.TotalSeconds `
+    --gap $gap.TotalSeconds `
+    --memory-usage $memoryUsage
