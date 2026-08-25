@@ -7,12 +7,13 @@ PAGE_SIZE = 4096
 # Fixed folder where every comparison's CSV output gets written
 OUTPUT_DIR = r"E:\Research\SharedFolder\Acquisitions"
 
-#Gap in raw file that needs to be ignored
-HOLE_START = 0xC0000000  # 3GB
-HOLE_END = 0x100000000   # 4GB
+# Gap in raw file that needs to be ignored
+# 3GB - 4GB
+HOLE_START = 0xC0000000  
+HOLE_END = 0x100000000   
 HOLE_SIZE = HOLE_END - HOLE_START
 
-#Adjust the raw file after 1Gb gap 
+# Adjust the raw file after 1Gb gap 
 def translate_offset(raw_offset: int) -> int | None:
     if raw_offset < HOLE_START:
         return raw_offset
@@ -20,7 +21,7 @@ def translate_offset(raw_offset: int) -> int | None:
         return None
     return raw_offset - HOLE_SIZE
 
-#Verify both files are the sizes they are meant to be before attempting a comparison
+# Verify both files are the sizes they are meant to be before attempting a comparison
 def check_file_sizes(raw_path: str, vmem_path: str) -> None:
     raw_size = os.path.getsize(raw_path)
     vmem_size = os.path.getsize(vmem_path)

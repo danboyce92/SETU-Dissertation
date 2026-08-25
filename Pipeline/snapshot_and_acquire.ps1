@@ -1,3 +1,5 @@
+# Example CLI command
+#powershell -ExecutionPolicy Bypass -File ".\snapshot_and_acquire.ps1" "Run275" "Run275.raw" 2 -Config "Win11_32Gb_2" -RunNumber 10   
 
 param(
     [Parameter(Mandatory = $true, Position = 0)]
@@ -6,12 +8,10 @@ param(
     [Parameter(Mandatory = $true, Position = 1)]
     [string]$OutputFileName,
 
-    #System Load
     [Parameter(Position = 2)]
     [ValidateSet(0, 1, 2)]
     [int]$Pressure = 0,
 
-    # Sheet name and run number 
     [Parameter(Mandatory = $true)]
     [string]$Config,
 
@@ -27,17 +27,18 @@ $GuestUser      = "winpmem-admin"
 $GuestPassword  = "Password123!"
 
 $GuestWinpmem   = "\\vmware-host\Shared Folders\SharedFolder\winpmem\go-winpmem_amd64_1.0-rc2_signed.exe"
-$GuestOutput    = "\\vmware-host\Shared Folders\SharedFolder\Acquisitions\Tests\$OutputFileName"
+$GuestOutput    = "\\vmware-host\Shared Folders\SharedFolder\Acquisitions\$OutputFileName"
 
-$XlsxPath       = "E:\Research\SharedFolder\Acquisitions\Data.xlsx"
+$XlsxPath       = "E:\Research\SharedFolder\Data\Data.xlsx"
 $RecordTimingScript = "E:\Research\Pipeline\record_run_timing.py"
 
-# Remove any load from previous run
+# Kill any leftover memory_load.ps1 process from a previous run
 Write-Host "Clearing any leftover memory load from a previous run..."
 $killCommand = 'Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like "*memory_load.ps1*" } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }'
 & $VmrunPath -T ws -gu $GuestUser -gp $GuestPassword runProgramInGuest $VmxPath `
     "C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -Command $killCommand
 
+# Optional memory load
 $pressurePercent = @{ 0 = 0; 1 = 25; 2 = 50 }[$Pressure]
 
 if ($pressurePercent -gt 0) {
@@ -47,13 +48,13 @@ if ($pressurePercent -gt 0) {
 
     & $VmrunPath -T ws -gu $GuestUser -gp $GuestPassword runProgramInGuest $VmxPath -noWait `
         "C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden `
-        -File $loadScript -PressurePercent $pressurePercent -LogPath $loadLog -HoldSeconds 900
+        -File $loadScript -PressurePercent $pressurePercent -LogPath $loadLog -HoldSeconds 3600
 
     Write-Host "Waiting for memory load to settle..."
-    Start-Sleep -Seconds 15
+    Start-Sleep -Seconds 90
 }
 
-# Measure memory usage
+# Measure memory in use
 Write-Host "Measuring current memory usage..."
 $memUsageScript = "\\vmware-host\Shared Folders\SharedFolder\scripts\memory_usage.ps1"
 $memUsageLog = "\\vmware-host\Shared Folders\SharedFolder\Acquisitions\Tests\$OutputFileName.memusage.txt"
@@ -98,7 +99,7 @@ Write-Host "Snapshot duration:       $($snapshotDuration.TotalSeconds) s"
 Write-Host "Gap (snapshot->acquire): $($gap.TotalSeconds) s"
 Write-Host "Acquisition duration:    $($acquisitionDuration.TotalSeconds) s"
 
-# Log into workbook
+# Log the timing for this run into the excel document
 python $RecordTimingScript --xlsx $XlsxPath --config $Config --run $RunNumber `
     --snapshot-duration $snapshotDuration.TotalSeconds `
     --acquisition-duration $acquisitionDuration.TotalSeconds `
