@@ -1,0 +1,6 @@
+RunID,OS,RAMTier,Pressure,Variant,TotalProcesses,StableCount,MediumCount,LargeCount,,Stable%,Medium%,Large%,,ErrorCount,MissingCount,Error%,Missing%
+Run011A,Win10,8Gb,2,Async,133,131,0,0,,98.5,0.0,0.0,,0,2,0.0,1.5
+Run012A,Win10,8Gb,2,Async,134,129,1,1,,96.27,0.75,0.75,,0,3,0.0,2.24
+Run013A,Win10,8Gb,2,Async,135,129,2,1,,95.56,1.48,0.74,,0,3,0.0,2.22
+Run014A,Win10,8Gb,2,Async,134,132,0,0,,98.51,0.0,0.0,,0,2,0.0,1.49
+Run015A,Win10,8Gb,2,Async,136,132,0,1,,97.06,0.0,0.74,,0,3,0.0,2.21

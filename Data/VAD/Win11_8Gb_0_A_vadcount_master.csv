@@ -1,0 +1,6 @@
+RunID,OS,RAMTier,Pressure,Variant,TotalProcesses,StableCount,MediumCount,LargeCount,,Stable%,Medium%,Large%,,ErrorCount,MissingCount,Error%,Missing%
+Run016A,Win11,8Gb,0,Async,148,130,7,3,,87.84,4.73,2.03,,0,8,0.0,5.41
+Run017A,Win11,8Gb,0,Async,146,136,4,1,,93.15,2.74,0.68,,0,5,0.0,3.42
+Run018A,Win11,8Gb,0,Async,146,139,1,1,,95.21,0.68,0.68,,0,5,0.0,3.42
+Run019A,Win11,8Gb,0,Async,140,135,0,1,,96.43,0.0,0.71,,0,4,0.0,2.86
+Run020A,Win11,8Gb,0,Async,137,133,1,0,,97.08,0.73,0.0,,0,3,0.0,2.19

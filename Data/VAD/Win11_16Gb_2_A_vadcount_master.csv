@@ -1,0 +1,6 @@
+RunID,OS,RAMTier,Pressure,Variant,TotalProcesses,StableCount,MediumCount,LargeCount,,Stable%,Medium%,Large%,,ErrorCount,MissingCount,Error%,Missing%
+Run046A,Win11,16Gb,2,Async,136,126,4,2,,92.65,2.94,1.47,,0,4,0.0,2.94
+Run047A,Win11,16Gb,2,Async,136,125,4,4,,91.91,2.94,2.94,,0,3,0.0,2.21
+Run048A,Win11,16Gb,2,Async,133,129,1,1,,96.99,0.75,0.75,,0,2,0.0,1.5
+Run049A,Win11,16Gb,2,Async,133,129,1,1,,96.99,0.75,0.75,,0,2,0.0,1.5
+Run050A,Win11,16Gb,2,Async,133,128,2,1,,96.24,1.5,0.75,,0,2,0.0,1.5
